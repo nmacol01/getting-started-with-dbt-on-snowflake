@@ -1,3 +1,11 @@
+SHOW TABLES IN DATABASE tasty_bytes_dbt_db;
+SHOW VIEWS IN DATABASE tasty_bytes_dbt_db;
+
+use database tasty_bytes_dbt_db;
+select * 
+from DEV.CUSTOMER_LOYALTY_METRICS
+;
+
 -- What tables exist?
 SHOW TABLES IN SCHEMA tb_101.raw_pos;
 

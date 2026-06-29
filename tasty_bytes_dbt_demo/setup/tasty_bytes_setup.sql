@@ -27,8 +27,9 @@ USE ROLE ACCOUNTADMIN;
 -- The Tasty Bytes data model is fairly large, so an XL warehouse is recommended.
 -- Alternatively, you can use an existing warehouse in your account.
 -- =============================================================================
+use role sysadmin;
+CREATE WAREHOUSE if not exists tasty_bytes_dbt_wh WAREHOUSE_SIZE = xsmall;
 
-CREATE WAREHOUSE tasty_bytes_dbt_wh WAREHOUSE_SIZE = XLARGE;
 
 -- =============================================================================
 -- STEP 2: Create a database and schemas for integrations and model materializations
@@ -43,6 +44,8 @@ CREATE SCHEMA IF NOT EXISTS tasty_bytes_dbt_db.prod;
 -- Used for storing objects Snowflake needs for GitHub integration (secrets, etc.)
 CREATE SCHEMA IF NOT EXISTS tasty_bytes_dbt_db.integrations;
 -- Used for the Tasty Bytes foundational source data loaded from S3
+
+
 CREATE SCHEMA IF NOT EXISTS tasty_bytes_dbt_db.raw;
 
 -- =============================================================================
@@ -74,6 +77,8 @@ ALTER SCHEMA tasty_bytes_dbt_db.prod SET METRIC_LEVEL = 'ALL';
 -- Alternatively, your admin can set up one OAuth2 integration for the team instead of managing personal access tokens.
 -- See: https://docs.snowflake.com/en/user-guide/ui-snowsight/workspaces-git
 -- =============================================================================
+/*
+-------------------- **** These bits were done as a prior setup step. Secret and Network Integration
 
 USE tasty_bytes_dbt_db.integrations;
 CREATE OR REPLACE SECRET tasty_bytes_dbt_db.integrations.tb_dbt_git_secret
@@ -115,7 +120,7 @@ CREATE OR REPLACE API INTEGRATION tb_dbt_git_api_integration
 -- CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION dbt_ext_access
 --   ALLOWED_NETWORK_RULES = (dbt_network_rule)
 --   ENABLED = TRUE;
-
+*/
 -- =============================================================================
 -- STEP 6: Set up source data - Tasty Bytes foundational data model
 -- The dbt project uses the foundational data model for the fictitious Tasty Bytes
@@ -125,6 +130,7 @@ CREATE OR REPLACE API INTEGRATION tb_dbt_git_api_integration
 -- =============================================================================
 
 -- File format and external stage
+use role sysadmin;
 
 CREATE OR REPLACE FILE FORMAT tasty_bytes_dbt_db.public.csv_ff 
 type = 'csv';
@@ -313,3 +319,6 @@ FROM @tasty_bytes_dbt_db.public.s3load/raw_pos/order_detail/;
 -- =============================================================================
 
 SELECT 'tasty_bytes_dbt_db setup is now complete' AS note;
+
+--- This next step executes the Deps processing.
+execute dbt project from workspace "USER$"."PUBLIC"."tasty_bytes_dbt" project_root='/tasty_bytes_dbt_demo' args='deps --target dev' external_access_integrations = (DBT_EXT_ACCESS)
